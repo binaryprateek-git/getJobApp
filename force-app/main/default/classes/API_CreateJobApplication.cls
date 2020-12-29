@@ -1,62 +1,99 @@
-@RestResource(urlMapping='/web/cases/*')
+/*
+Sample Json Assumed:
+{
+"candidate": [
+      {
+	  "name":ABC
+	  "email":abc@abc.com
+	  "phone":7778904567
+	  "jobId":R121
+	  },
+	  {
+	  "name":XYZ
+	  "email":xyz@xyz.com
+	  "phone":777234567
+	  "jobId":R121
+	  },
+	  {
+	  "name":PQR
+	  "email":pqr@pqr.com
+	  "phone":7008904567
+	  "jobId":R129
+	  }
+	 ]
+}
+
+
+*/
+
+@RestResource(urlMapping='/web/jobs/*')
 global without sharing class API_CreateJobApplication {
     @HttpPost
     global static void createJobApp() {
         RestRequest req = RestContext.request;
         RestResponse res = Restcontext.response;
-        Set<String> setOfAllCandidateEmails= new Set<String>();
-        Set<String> setOfNewCandidateEmails= new Set<String>();
-        Map<String,String> mapOfEmailToContactId= new Map<String,String>();
-        Map<String,String> mapOfEmailToJobId= new Map<String,String>();
-        Map<String,String> param2data = req.params;
-        for(String s : param2data.keySet()){
-            if(s=='email'){
-                setOfAllCandidateEmails.add(param2data.get(s));
-            }
-        }
         res.addHeader('Content-Type', 'application/json');
+        Set<String> setOfAllCandidateEmails= new Set<String>();  //set of Email of All Candidate
+        Set<String> setOfNewCandidateEmails= new Set<String>();  //set of only Emails of new candidates(new Contact)
+        Map<String,String> mapOfEmailToContactId= new Map<String,String>(); //map of Email and contact id
+        Map<String,String> mapOfEmailToJobId= new Map<String,String>(); //map of email and jobid
         API_Result theResult = new API_Result();
         try {
             if(RestContext.request != null && RestContext.request.requestBody != null){
                 String jsonstring=RestContext.request.requestBody.toString();
                 Boolean error = false;
-                CandidateParams cpWrapperObject = (CandidateParams) JSON.deserialize(jsonstring, CandidateParams.class);
-                Contact conObject = new Contact();
-                for(Contact c : [SELECT Id, Email From Contact where Email IN:setOfAllCandidateEmails]){
-                    conObject = c;
-                    //nullcheck;
-                    if(!setOfAllCandidateEmails.contains(c.Email)){
-                        setOfAllCandidateEmails.remove(c.Email);
-                        setOfNewCandidateEmails.addAll(setOfAllCandidateEmails);
+                List<CandidateParams> cpWrapperObject = (List<CandidateParams>) JSON.deserialize(jsonstring, CandidateParams.class); //desearlizing json
+                
+                for(CandidateParams cp: cpWrapperObject){
+                    setOfAllCandidateEmails.add(cp.candidate.email);
+                    mapOfEmailToJobId.put(cp.candidate.email,cp.candidate.jobId);
+                }
+                //checking if contacts already exist
+                if(setOfAllCandidateEmails.size()>0){
+                    List<Contact> lstOfOldContacts= [SELECT Id, Email From Contact where Email IN:setOfAllCandidateEmails];
+                    if(lstOfOldContacts.size()>0){
+                        for(Contact c: lstOfOldContacts){
+                            mapOfEmailToContactId.put(c.Email,c.id);
+                        }
                     }
-                    mapOfEmailToContactId.put(c.Email,c.id);
                 }
+
+                //if contact doesnot exist create new contacts
                 List<Contact> lstOfNewContacts = new List<Contact>();
-                if(conObject.Id == null){
-                    conObject.LastName = cpWrapperObject.name;
-                    conObject.Email = cpWrapperObject.email;
-                    conObject.Phone = cpWrapperObject.phone;
-                    lstOfNewContacts.add(conObject);
-                    //insert conObject;
-                    //con = auth.createContact(unoId,false);                
+                for(CandidateParams cp: cpWrapperObject){
+                    if(!mapOfEmailToContactId.containsKey(cp.candidate.email)){
+                        Contact conObject = new Contact();
+                        conObject.LastName = cp.candidate.name;
+                        conObject.Email = cp.candidate.email;
+                        conObject.Phone = cp.candidate.phone;
+                        lstOfNewContacts.add(conObject);
+                        setOfNewCandidateEmails.add(cp.candidate.email);              
+                    }
                 }
-                Database.insert(lstOfNewContacts,false);
-                List<Contact> lstOfCon = [SELECT Id, Email From Contact where Email IN:setOfNewCandidateEmails];
-                //nullcheck
-                for(Contact c: lstOfCon){
-                    mapOfEmailToContactId.put(c.Email,c.id);
+                if(lstOfNewContacts.size()>0){
+                    database.insert(lstOfNewContacts,false);
+                    List<Contact> lstOfCon = [SELECT Id, Email From Contact where Email IN:setOfNewCandidateEmails];
+                    if(lstOfCon.size()>0){
+                        for(Contact c: lstOfCon){
+                            mapOfEmailToContactId.put(c.Email,c.id);
+                        }
+                    }
                 }
+                
+                //inserting the jobapplications records
                 List<Job_Application__c> lstOfNewJobApplication = new List<Job_Application__c>();
-                //null check
-                for(String s : mapOfEmailToContactId.keySet()){              
-                    Job_Application__c jobAppObject = new Job_Application__c();
-                    jobAppObject.Job__c= mapOfEmailToJobId.get(s);
-                    jobAppObject.Contact__c = mapOfEmailToContactId.get(s);
-                    jobAppObject.Active__c = true; //assuming the web teams only send the job applications for active jobs;
-                    lstOfNewJobApplication.add(jobAppObject);
+                if(mapOfEmailToContactId.size()>0){
+                    for(String s : mapOfEmailToContactId.keySet()){              
+                        Job_Application__c jobAppObject = new Job_Application__c();
+                        jobAppObject.Job__c= mapOfEmailToJobId.get(s);
+                        jobAppObject.Contact__c = mapOfEmailToContactId.get(s);
+                        jobAppObject.Active__c = true; //assuming the web teams only send the job applications for active jobs;
+                        lstOfNewJobApplication.add(jobAppObject);
+                    }
+                    if(lstOfNewJobApplication.size()>0){
+                        database.insert(lstOfNewJobApplication,false);
+                    }
                 }
-                //nullcheck
-                database.insert(lstOfNewJobApplication,false);
             }                                   
         } catch(Exception e){
             res.statusCode = 500;
@@ -66,6 +103,9 @@ global without sharing class API_CreateJobApplication {
     }
 
     public class CandidateParams {
+        public Candidates candidate{get;set;}
+    }
+    public class Candidates {
         String name {get;set;}
         String email {get;set;}
         String phone {get;set;}
