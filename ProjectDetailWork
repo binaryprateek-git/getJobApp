@@ -1,0 +1,51 @@
+Req 1. People will be able to apply for multiple job postings, we should be able to see all of the Applications an
+individual has submitted. An application can’t exist without a related Individual (Applicant).
+
+Solution: 
+Created two objects
+a. Job
+b. Job Application
+
+Created Job Application as the junction object between Contact(Applicants) and Jobs.
+
+Req 2. Accounts are also used for Internal Departments, we need a way to separate those from our
+Applicants. Internal Departments will sponsor Jobs, it is unlikely but sometimes will happen that a Job
+may be sponsored by multiple departments - our system should support that.
+
+Solution: 
+1. Created two record types in Account Object
+a. Internal Department
+b. Applicants
+
+2. Created lookup relationship between Accounts and Jobs.
+
+Req 3. We don’t need to build a web portal but our web team has requested we provide APIs that will accept
+Application data. The web site will collect Information about the Applicant (Name, Email Address, Phone
+Number) as well as the Job Id, the web team will pass this information back to Salesforce where we will
+create Application records with the appropriate relationships to Contacts and Jobs. Since Salesforce is
+sometimes down for maintenance the web team has
+built capability to cache these records to send in bulk, our Endpoints should support that.
+
+Solution: 
+Created a SalesForce as a webservice in Apex class "API_CreateJobApplication" and also handled the scenario for creating job application in bulk.
+
+Req 4. Our recruiters have expressed some concerns over the interface and number of clicks needed to look
+through Jobs and Applications. They would like to be able to View all Active Job Postings from an Internal
+Department record, they would also like to be able to select a Job from that view and have details of the
+Applications and Individuals show all within the Internal Department record, we should be able to leverage
+some custom UI components to do this.
+
+Solution: 
+Created Lightning web component "DisplayAllRelatedRecords" and Apex class "JobController".
+
+Req 5. When a Job Posting has been filled the recruiter will set the Active Status of the Job to inactive. All
+related Applications for that Job should also be set to inactive when this happens.
+
+Solution:
+Created a process builder "UpdateJobApplicationToInactive" 
+
+Req 6. Everyone will have access to view all records however our Recruitment Team and Leads should be the
+only ones with access to Salary information for a Job
+
+Solution: Created two profiles Recruiter and Team Lead. Given access to salary information to both Recruiter and Team Lead profiles.
+
