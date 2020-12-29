@@ -1,29 +1,6 @@
 /*
 Sample Json Assumed:
-{
-"candidate": [
-      {
-	  "name":ABC
-	  "email":abc@abc.com
-	  "phone":7778904567
-	  "jobId":R121
-	  },
-	  {
-	  "name":XYZ
-	  "email":xyz@xyz.com
-	  "phone":777234567
-	  "jobId":R121
-	  },
-	  {
-	  "name":PQR
-	  "email":pqr@pqr.com
-	  "phone":7008904567
-	  "jobId":R129
-	  }
-	 ]
-}
-
-
+'{"candidate":[{"name":"ABC","email":"abc@abc.com","phone":7778904567,"jobId":"R121"},{"name":"XYZ","email":"xyz@xyz.com","phone":777234567,"jobId":"R121"},{"name":"PQR","email":"pqr@pqr.com","phone":7008904567,"jobId":"R129"}]}';
 */
 
 @RestResource(urlMapping='/web/jobs/*')
@@ -31,8 +8,6 @@ global without sharing class API_CreateJobApplication {
     @HttpPost
     global static jobApplicationResWrapper createJobApp() {
         RestRequest req = RestContext.request;
-        RestResponse res = Restcontext.response;
-        res.addHeader('Content-Type', 'application/json');
         Set<String> setOfAllCandidateEmails= new Set<String>();  //set of Email of All Candidate
         Set<String> setOfNewCandidateEmails= new Set<String>();  //set of only Emails of new candidates(new Contact)
         Map<String,String> mapOfEmailToContactId= new Map<String,String>(); //map of Email and contact id
@@ -95,11 +70,18 @@ global without sharing class API_CreateJobApplication {
                     }
                     if(lstOfNewJobApplication.size()>0){
                         Database.SaveResult[] jobApplicationList = database.insert(lstOfNewJobApplication,false);
-                        // Iterate through each returned result
-                        for (Database.SaveResult ja : jobApplicationList) {
+                        
+                        List<jobApplicationStatusWrapper> lstjobApplicationStatusWrapper = new List<jobApplicationStatusWrapper>();
+                        Integer recCount=0;
+                        
+                        for (Database.SaveResult ja : jobApplicationList) {                    
+                            jobApplicationStatusWrapper objStatusWrapper = new jobApplicationStatusWrapper();
                             if (ja.isSuccess()) {
                                 System.debug('Successfully inserted Job Application. Account ID: ' + ja.getId());
                                 
+                                objStatusWrapper.status = 'SUCCESS';
+                                objStatusWrapper.sfRecordId = ja.getId();
+                                objStatusWrapper.jobId = lstOfNewJobApplication.get(recCount).Job__c;
                             }
                             else {
                                 // Operation failed, so get all errors                
@@ -107,17 +89,21 @@ global without sharing class API_CreateJobApplication {
                                     System.debug('The following error has occurred.');                    
                                     System.debug(err.getStatusCode() + ': ' + err.getMessage());
                                     System.debug('Job Application fields that affected this error: ' + err.getFields());
+                                    
+                                    objStatusWrapper.status = err.getStatusCode() + ': ' + err.getMessage();
+                                    objStatusWrapper.jobId = lstOfNewJobApplication.get(recCount).Job__c;
                                 }
                             }
+                            lstjobApplicationStatusWrapper.add(objStatusWrapper);
+                            recCount++;
                         }
-                        objResponse.result = 'ABC';
+                        objResponse.result = lstjobApplicationStatusWrapper;                        
                     }
                 }                
             }                                   
         } catch(Exception e){
             objResponse.status = String.valueOf(e);
-        }  
-        //res.responseBody = Blob.valueOf(JSON.serialize(theResult));
+        }
         
         return objResponse;
     }
@@ -133,13 +119,14 @@ global without sharing class API_CreateJobApplication {
         String jobId {get;set;}
     }
     
-    public class jobApplicationStatusWrapper {
+    global without sharing class jobApplicationStatusWrapper {
         public String status;
-        public String recordid;
+        public String jobId;
+        public String sfRecordId;
     }
     
     global without sharing class jobApplicationResWrapper{
         public string status;
-        public string result;        
+        public List<jobApplicationStatusWrapper> result;        
     }
 }

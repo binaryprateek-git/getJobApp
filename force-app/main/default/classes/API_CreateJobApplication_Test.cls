@@ -3,7 +3,7 @@ private with sharing class API_CreateJobApplication_Test {
 	private static final String WORKORDER_API_REQUESTURI = '/services/apexrest/web/jobs/';
 	private static final String HTTPS_PROTOCOL = 'https://';
 	private static final String METHOD_POST = 'POST';
-	private static final String RESPONSE_SUCCESS = 'Success';
+	private static final String RESPONSE_SUCCESS = 'SUCCESS';
     
     static string createMockJsonReq(){
         String JsonbodyTerm = '{"candidate":[{"name":"ABC","email":"abc@abc.com","phone":7778904567,"jobId":"R121"},{"name":"XYZ","email":"xyz@xyz.com","phone":777234567,"jobId":"R121"},{"name":"PQR","email":"pqr@pqr.com","phone":7008904567,"jobId":"R129"}]}';
@@ -24,9 +24,9 @@ private with sharing class API_CreateJobApplication_Test {
         RestContext.request = request;
         
         Test.startTest();
-           API_CreateJobApplication.createJobApp();    
+           API_CreateJobApplication.jobApplicationResWrapper objResponse = API_CreateJobApplication.createJobApp();    
         Test.stopTest();
-        	//system.assertEquals(RESPONSE_SUCCESS, objResponse.status);        
+        	system.assertEquals(RESPONSE_SUCCESS, objResponse.status);        
         //}
     }
 }
