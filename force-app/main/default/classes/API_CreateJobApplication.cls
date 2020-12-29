@@ -1,6 +1,6 @@
 /*
 Sample Json Assumed:
-'{"candidate":[{"name":"ABC","email":"abc@abc.com","phone":7778904567,"jobId":"R121"},{"name":"XYZ","email":"xyz@xyz.com","phone":777234567,"jobId":"R121"},{"name":"PQR","email":"pqr@pqr.com","phone":7008904567,"jobId":"R129"}]}';
+'{"candidate":[{"name":"ABC","email":"abc@abc.com","phone":"7778904567","jobId":"R121"},{"name":"XYZ","email":"xyz@xyz.com","phone":"777234567","jobId":"R121"},{"name":"PQR","email":"pqr@pqr.com","phone":"7008904567","jobId":"R129"}]}';
 */
 
 @RestResource(urlMapping='/web/jobs/*')
@@ -107,16 +107,16 @@ global without sharing class API_CreateJobApplication {
         
         return objResponse;
     }
-
-    public class CandidateParams {
-        public Candidates candidate{get;set;}
+   
+    global without sharing class Candidates {
+        public String name;
+        public String email;
+        public String phone;
+        public String jobId;
     }
     
-    public class Candidates {
-        String name {get;set;}
-        String email {get;set;}
-        String phone {get;set;}
-        String jobId {get;set;}
+    global without sharing class CandidateParams {
+        public Candidates candidate;
     }
     
     global without sharing class jobApplicationStatusWrapper {

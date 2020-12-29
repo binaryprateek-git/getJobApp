@@ -6,7 +6,7 @@ private with sharing class API_CreateJobApplication_Test {
 	private static final String RESPONSE_SUCCESS = 'SUCCESS';
     
     static string createMockJsonReq(){
-        String JsonbodyTerm = '{"candidate":[{"name":"ABC","email":"abc@abc.com","phone":7778904567,"jobId":"R121"},{"name":"XYZ","email":"xyz@xyz.com","phone":777234567,"jobId":"R121"},{"name":"PQR","email":"pqr@pqr.com","phone":7008904567,"jobId":"R129"}]}';
+        String JsonbodyTerm = '{[{"name":"ABC","email":"abc@abc.com","phone":"7778904567","jobId":"R121"},{"name":"XYZ","email":"xyz@xyz.com","phone":"777234567","jobId":"R121"},{"name":"PQR","email":"pqr@pqr.com","phone":"7008904567","jobId":"R129"}]}';
     	
         return JsonbodyTerm;
     }
