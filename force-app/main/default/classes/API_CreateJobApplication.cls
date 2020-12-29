@@ -29,7 +29,7 @@ Sample Json Assumed:
 @RestResource(urlMapping='/web/jobs/*')
 global without sharing class API_CreateJobApplication {
     @HttpPost
-    global static void createJobApp() {
+    global static jobApplicationResWrapper createJobApp() {
         RestRequest req = RestContext.request;
         RestResponse res = Restcontext.response;
         res.addHeader('Content-Type', 'application/json');
@@ -37,7 +37,10 @@ global without sharing class API_CreateJobApplication {
         Set<String> setOfNewCandidateEmails= new Set<String>();  //set of only Emails of new candidates(new Contact)
         Map<String,String> mapOfEmailToContactId= new Map<String,String>(); //map of Email and contact id
         Map<String,String> mapOfEmailToJobId= new Map<String,String>(); //map of email and jobid
-        API_Result theResult = new API_Result();
+        
+        jobApplicationResWrapper objResponse = new jobApplicationResWrapper();
+        objResponse.status = 'SUCCESS';
+        
         try {
             if(RestContext.request != null && RestContext.request.requestBody != null){
                 String jsonstring=RestContext.request.requestBody.toString();
@@ -91,24 +94,52 @@ global without sharing class API_CreateJobApplication {
                         lstOfNewJobApplication.add(jobAppObject);
                     }
                     if(lstOfNewJobApplication.size()>0){
-                        database.insert(lstOfNewJobApplication,false);
+                        Database.SaveResult[] jobApplicationList = database.insert(lstOfNewJobApplication,false);
+                        // Iterate through each returned result
+                        for (Database.SaveResult ja : jobApplicationList) {
+                            if (ja.isSuccess()) {
+                                System.debug('Successfully inserted Job Application. Account ID: ' + ja.getId());
+                                
+                            }
+                            else {
+                                // Operation failed, so get all errors                
+                                for(Database.Error err : ja.getErrors()) {
+                                    System.debug('The following error has occurred.');                    
+                                    System.debug(err.getStatusCode() + ': ' + err.getMessage());
+                                    System.debug('Job Application fields that affected this error: ' + err.getFields());
+                                }
+                            }
+                        }
+                        objResponse.result = 'ABC';
                     }
-                }
+                }                
             }                                   
         } catch(Exception e){
-            res.statusCode = 500;
-            theResult.error = String.valueOf(e);
+            objResponse.status = String.valueOf(e);
         }  
-        res.responseBody = Blob.valueOf(JSON.serialize(theResult));
+        //res.responseBody = Blob.valueOf(JSON.serialize(theResult));
+        
+        return objResponse;
     }
 
     public class CandidateParams {
         public Candidates candidate{get;set;}
     }
+    
     public class Candidates {
         String name {get;set;}
         String email {get;set;}
         String phone {get;set;}
         String jobId {get;set;}
+    }
+    
+    public class jobApplicationStatusWrapper {
+        public String status;
+        public String recordid;
+    }
+    
+    global without sharing class jobApplicationResWrapper{
+        public string status;
+        public string result;        
     }
 }

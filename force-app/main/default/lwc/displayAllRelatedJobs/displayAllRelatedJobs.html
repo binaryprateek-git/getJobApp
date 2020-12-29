@@ -3,11 +3,23 @@
         <ul>
             <template if:true={responseReceived}>
                 <template for:each={jobs} for:item="job">
-                    <li key={job.id}>
+                    <li key={job.Id}>
                         <div class="slds-p-around_medium lgc-bg">
                             <lightning-tile label={job.Name} type="media">
                                 <lightning-icon slot="media" icon-name="standard:account"></lightning-icon>
                                 <p class="slds-truncate" title={job.JobTitle__c}>{job.JobTitle__c}</p>
+                                <p>
+                                    <lightning-button label="Get Job Details" onclick={getApplications} key-field={job.Id} data-record-id={job.Id} ></lightning-button>
+                                </p>
+                                <ul>
+                                    <template if:true={jobDetailsReceived}>
+                                        <template for:each={mapData} for:item="mapKey">
+                                            <li key={mapKey.key}>
+                                            <div title={mapKey.key}>{mapKey.key}</div>
+                                            </li>
+                                            </template>
+                                    </template>
+                                </ul>
                             </lightning-tile>
                         </div>
                     </li>
